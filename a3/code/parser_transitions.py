@@ -136,7 +136,7 @@ def minibatch_parse(sentences, model, batch_size):
 
         unfinished_partial_parses[:batch_size] = [unfinished_partial_parse for unfinished_partial_parse in unfinished_partial_parses if not unfinished_partial_parse.done()]
 
-    dependencies = [partial_parse.get_dependencies for partial_parse in partial_parses]
+    dependencies = [partial_parse.get_dependencies() for partial_parse in partial_parses]
 
     ### END YOUR CODE
 
