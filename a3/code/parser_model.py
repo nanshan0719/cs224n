@@ -73,6 +73,15 @@ class ParserModel(nn.Module):
         ### 
         ### See the PDF for hints.
 
+        self.embed_to_hidden_weight = nn.Parameter(torch.empty((self.embed_size * self.n_features, self.hidden_size), dtype=torch.float32))
+        self.embed_to_hidden_bias = nn.Parameter(torch.empty(self.hidden_size, dtype=torch.float32))
+        nn.init.xavier_uniform_(self.embed_to_hidden_weight)
+        nn.init.uniform_(self.embed_to_hidden_bias)
+        self.dropout = nn.Dropout(dropout_prob)
+        self.hidden_to_logits_weight = nn.Parameter(torch.empty((self.hidden_size, self.n_classes), dtype=torch.float32))
+        self.hidden_to_logits_bias = nn.Parameter(torch.empty(self.n_classes, dtype=torch.float32))
+        nn.init.xavier_uniform_(self.hidden_to_logits_weight)
+        nn.init.uniform_(self.hidden_to_logits_bias)
 
         ### END YOUR CODE
 
@@ -105,6 +114,9 @@ class ParserModel(nn.Module):
         ###     View: https://pytorch.org/docs/stable/tensors.html#torch.Tensor.view
         ###     Flatten: https://pytorch.org/docs/stable/generated/torch.flatten.html
 
+        # x = torch.stack([self.embeddings[w[i]] for i in range(w.shape[0])])
+        # x = x.view(w.shape[0],-1)
+        x = self.embeddings[w].view(w.shape[0], -1)
 
         ### END YOUR CODE
         return x
@@ -141,6 +153,19 @@ class ParserModel(nn.Module):
         ###     Matrix product: https://pytorch.org/docs/stable/torch.html#torch.matmul
         ###     ReLU: https://pytorch.org/docs/stable/nn.html?highlight=relu#torch.nn.functional.relu
 
+        # w (batch_size, n_features)
+        # embed_to_hidden_weight (n_features * embed, hid)
+        # hid_to_logit (hid, n_class)
+
+        w = self.embedding_lookup(w) # (batch, n_features*embed)
+
+        w = w @ self.embed_to_hidden_weight + self.embed_to_hidden_bias # (batch, hid)
+
+        w = torch.max(torch.zeros_like(w), w)
+
+        w = self.dropout(w)
+
+        logits = w @ self.hidden_to_logits_weight + self.hidden_to_logits_bias
 
         ### END YOUR CODE
         return logits
