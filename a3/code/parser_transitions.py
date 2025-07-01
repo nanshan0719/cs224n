@@ -34,7 +34,7 @@ class PartialParse(object):
         ###       reference the sentence object.  That is, remember to NOT modify the sentence object. 
         
         self.stack = ["ROOT"]
-        self.buffer = sentence
+        self.buffer = sentence.copy()
         self.dependencies = []
 
         ### END YOUR CODE
@@ -55,12 +55,12 @@ class PartialParse(object):
         ###         2. Left Arc
         ###         3. Right Arc
 
-        if transition == "Shift":
-            self.stack.append(self.buffer.pop())
+        if transition == "S":
+            self.stack.append(self.buffer.pop(0))
         if transition == "LA":
-            self.dependencies.append((self.stack.back(), self.stack.pop(-2)))
+            self.dependencies.append((self.stack[-1], self.stack.pop(-2)))
         if transition == "RA":
-            self.dependencies.append((self.stack[-2], self.stack.pop()))
+            self.dependencies.append((self.stack[-2], self.stack.pop(-1)))
 
 
         ### END YOUR CODE
@@ -79,7 +79,7 @@ class PartialParse(object):
         return self.dependencies
     
     def done(self):
-        return self.buffer.empty()
+        return self.buffer.empty() and len(self.stack) == 1
     
     def get_dependencies(self):
         return self.dependencies
@@ -125,11 +125,16 @@ def minibatch_parse(sentences, model, batch_size):
 
     while unfinished_partial_parses:
 
-        transitions = model.predict(unfinished_partial_parses)
+        next_batch = unfinished_partial_parses[:batch_size]
 
-        unfinished_partial_parses = [unfinished_partial_parse.parse(transition) for unfinished_partial_parse, transition in zip(unfinished_partial_parses,transitions)]
+        transitions = model.predict(next_batch)
+        
+        for p, t in zip(next_batch, transitions): p.parse_step(t)
 
-        unfinished_partial_parses = [unfinished_partial_parse for unfinished_partial_parse in unfinished_partial_parses if not unfinished_partial_parse.done()]
+
+        # next_batch = [unfinished_partial_parse.parse(transition) for unfinished_partial_parse, transition in zip(next_batch,transitions)]
+
+        unfinished_partial_parses[:batch_size] = [unfinished_partial_parse for unfinished_partial_parse in unfinished_partial_parses if not unfinished_partial_parse.done()]
 
     dependencies = [partial_parse.get_dependencies for partial_parse in partial_parses]
 
