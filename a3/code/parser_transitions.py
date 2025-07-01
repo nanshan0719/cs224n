@@ -79,7 +79,7 @@ class PartialParse(object):
         return self.dependencies
     
     def done(self):
-        return self.buffer.empty() and len(self.stack) == 1
+        return len(self.buffer) == 0 and len(self.stack) == 1
     
     def get_dependencies(self):
         return self.dependencies
